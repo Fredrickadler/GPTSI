@@ -12,8 +12,8 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # بارگذاری توکن‌ها از متغیرهای محیطی
-TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
-OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
+TELEGRAM_TOKEN = os.environ.get("7872562535:AAFeRdlg5eVyxxxMsmk-qCCcqoODmNWiPSw")
+OPENAI_API_KEY = os.environ.get("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")
 
 if not TELEGRAM_TOKEN or not OPENAI_API_KEY:
     raise RuntimeError("توکن تلگرام یا کلید OpenAI تنظیم نشده‌اند!")
