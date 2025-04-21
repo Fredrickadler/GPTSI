@@ -3,8 +3,7 @@ import logging
 import asyncio
 from fastapi import FastAPI, Request, HTTPException
 from telegram import Bot, Update, ChatAction
-from telegram.ext import Dispatcher, CommandHandler, MessageHandler, Filters
-from telegram.ext.dispatcher import run_async
+from telegram.ext import Dispatcher, CommandHandler, MessageHandler, filters
 import openai
 
 # تنظیمات لاگ
@@ -49,27 +48,20 @@ async def ask_openai(question: str) -> str:
 def start(update, context):
     update.message.reply_text("سلام! من ربات هوش مصنوعی شما هستم. هر سوالی داری بپرس!")
 
-# هندلر پیام‌های متنی
-@run_async
-def handle_message(update, context):
+# هندلر پیام‌های متنی (async کامل)
+async def handle_message(update, context):
     user_text = update.message.text
-    chat_id = update.message.chat_id
+    chat_id = update.message.chat.id
 
     logger.info(f"پیام از کاربر: {user_text}")
 
-    # ارسال وضعیت "در حال تایپ" به تلگرام
-    bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
-
-    # اجرای تابع OpenAI به صورت async
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    answer = loop.run_until_complete(ask_openai(user_text))
-
-    bot.send_message(chat_id=chat_id, text=answer)
+    await bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
+    answer = await ask_openai(user_text)
+    await bot.send_message(chat_id=chat_id, text=answer)
 
 # اضافه کردن هندلرها به Dispatcher
 dispatcher.add_handler(CommandHandler("start", start))
-dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
+dispatcher.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
 
 # مسیر اصلی برای دریافت آپدیت‌ها از تلگرام (وبهوک)
 @app.post("/")
