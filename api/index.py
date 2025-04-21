@@ -1,19 +1,19 @@
 import os
 import logging
+import asyncio
 from fastapi import FastAPI, Request, HTTPException
-from telegram import Bot, Update
+from telegram import Bot, Update, ChatAction
 from telegram.ext import Dispatcher, CommandHandler, MessageHandler, Filters
 from telegram.ext.dispatcher import run_async
 import openai
-import asyncio
 
 # تنظیمات لاگ
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# بارگذاری توکن‌ها از متغیرهای محیطی
-TELEGRAM_TOKEN = os.environ.get("7872562535:AAFeRdlg5eVyxxxMsmk-qCCcqoODmNWiPSw")
-OPENAI_API_KEY = os.environ.get("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")
+# بارگذاری متغیرهای محیطی
+TELEGRAM_TOKEN = os.environ.get("TELEGRAM_TOKEN")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY")
 
 if not TELEGRAM_TOKEN or not OPENAI_API_KEY:
     raise RuntimeError("توکن تلگرام یا کلید OpenAI تنظیم نشده‌اند!")
@@ -23,10 +23,10 @@ openai.api_key = OPENAI_API_KEY
 app = FastAPI()
 bot = Bot(token=TELEGRAM_TOKEN)
 
-# ساخت دیسپچر برای مدیریت آپدیت‌ها
+# ساخت Dispatcher برای مدیریت آپدیت‌ها
 dispatcher = Dispatcher(bot, None, workers=0, use_context=True)
 
-# تابع برای ارسال درخواست به OpenAI
+# تابع async برای ارسال سوال به OpenAI و دریافت پاسخ
 async def ask_openai(question: str) -> str:
     try:
         response = await asyncio.to_thread(
@@ -57,8 +57,8 @@ def handle_message(update, context):
 
     logger.info(f"پیام از کاربر: {user_text}")
 
-    # ارسال پیام در حال پردازش
-    bot.send_chat_action(chat_id=chat_id, action="typing")
+    # ارسال وضعیت "در حال تایپ" به تلگرام
+    bot.send_chat_action(chat_id=chat_id, action=ChatAction.TYPING)
 
     # اجرای تابع OpenAI به صورت async
     loop = asyncio.new_event_loop()
@@ -67,10 +67,11 @@ def handle_message(update, context):
 
     bot.send_message(chat_id=chat_id, text=answer)
 
-# اضافه کردن هندلرها به دیسپچر
+# اضافه کردن هندلرها به Dispatcher
 dispatcher.add_handler(CommandHandler("start", start))
 dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, handle_message))
 
+# مسیر اصلی برای دریافت آپدیت‌ها از تلگرام (وبهوک)
 @app.post("/")
 async def telegram_webhook(request: Request):
     try:
